@@ -1,0 +1,7 @@
+{
+  "resources": [
+    "./icons/r*/*.png"
+  ],
+  "output" : "build",
+  "project_name" : "test_project"
+}
