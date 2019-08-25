@@ -76,3 +76,12 @@ Examples
 A fully functional CMake project is available in `example` directory to show how resources are stored and used in code.
 In that example a few icons and a text file are embedded into executable. At runtime we access icon data
 (only print its size and output text file contains.
+
+Mirrors
+-------
+
+The project is stored at:
+
+BitBucket https://bitbucket.org/funbiscuit/resource-builder
+
+Github https://github.com/funbiscuit/resource-builder
