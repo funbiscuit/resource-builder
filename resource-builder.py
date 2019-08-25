@@ -120,13 +120,7 @@ def process_resource(file):
     print("Processing %s" % file)
 
     name = get_var_name(file)
-    varNames.append(name)
-    out_file = "%s/objs/%s.o" % (output, name)
-    subprocess.call(["objcopy", "-I", "binary", "-O", "elf64-x86-64", "-B", "i386:x86-64", file, out_file])
-
-    with open("./build/src/win.rc", "a") as winFile:
-        winFile.write("%s RCDATA \"./../../%s\"\n" % (name, file))
-        winFile.close()
+    varNames.append((name, file))
 
 
 varNames = []
@@ -157,6 +151,13 @@ with open("resources.json") as data_file:
             if is_resource(local_file):
                 process_resource(local_file)
 
+    with open("./build/src/win.rc", "w") as winFile:
+        for var in varNames:
+            winFile.write("%s RCDATA \"./../../%s\"\n" % (var[0], var[1]))
+            out_file = "%s/objs/%s.o" % (output, var[0])
+            subprocess.call(["objcopy", "-I", "binary", "-O", "elf64-x86-64", "-B", "i386:x86-64", var[1], out_file])
+        winFile.close()
+
     with open("./build/include/resource_builder/resources.h", "w") as header:
         ids = ""
         isFirst = True
@@ -165,7 +166,7 @@ with open("resources.json") as data_file:
             if not isFirst:
                 # for second and other ids add comma, new line and 8 spaces
                 ids += ",\n        "
-            ids += "RES_%s = %d" % (var.upper(), counter)
+            ids += "RES_%s = %d" % (var[0].upper(), counter)
             counter += 1
             isFirst = False
         header_def = project_name.upper()
@@ -181,9 +182,10 @@ with open("resources.json") as data_file:
         isFirst = True
         for var in varNames:
             counter += 1
-            start = "_binary_" + var + "_start"
-            end = "_binary_" + var + "_end"
+            start = "_binary_" + var[0] + "_start"
+            end = "_binary_" + var[0] + "_end"
             if not isFirst:
+                # spaces are for proper indentation
                 starts_arr += ",\n                         "
                 sizes_arr += ",\n                        "
                 names_arr += ",\n                                  "
@@ -192,7 +194,7 @@ with open("resources.json") as data_file:
             extern_vars += "extern uint8_t " + start + ";\n"
             extern_vars += "extern uint8_t " + end + ";\n"
             starts_arr += "&" + start
-            names_arr += "\"" + var + "\""
+            names_arr += "\"" + var[0] + "\""
             sizes_arr += "static_cast<uint32_t>(&" + end + " - &" + start + ")"
 
         source.write(sourceTemplate % (extern_vars, starts_arr, sizes_arr,
