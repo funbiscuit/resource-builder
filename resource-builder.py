@@ -151,12 +151,16 @@ with open("resources.json") as data_file:
             if is_resource(local_file):
                 process_resource(local_file)
 
-    with open("./build/src/win.rc", "w") as winFile:
+    if sys.platform == "win32":
+        with open("./build/src/win.rc", "w") as winFile:
+            for var in varNames:
+                path = var[1].replace("\\", "/")
+                winFile.write("%s RCDATA \"./../../%s\"\n" % (var[0], path))
+            winFile.close()
+    elif sys.platform == "linux" or sys.platform == "linux2":
         for var in varNames:
-            winFile.write("%s RCDATA \"./../../%s\"\n" % (var[0], var[1]))
             out_file = "%s/objs/%s.o" % (output, var[0])
             subprocess.call(["objcopy", "-I", "binary", "-O", "elf64-x86-64", "-B", "i386:x86-64", var[1], out_file])
-        winFile.close()
 
     with open("./build/include/resource_builder/resources.h", "w") as header:
         ids = ""
