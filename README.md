@@ -50,3 +50,5 @@ uint32_t sz = ResourceBuilder::get_resource_size(ResourceBuilder::RES_YOUR_RES_N
 ~~~
 
 All available resource ids are available in enum `ResourceBuilder::ResourceId`
+
+A fully functional CMake project is available in `example` directory to show how resources are stored and used in code.

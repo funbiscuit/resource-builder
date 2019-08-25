@@ -1,0 +1,8 @@
+{
+  "resources": [
+    "./icons/r*/*.png",
+    "./txt/*.txt"
+  ],
+  "output" : "build",
+  "project_name" : "resource_builder"
+}
