@@ -20,7 +20,7 @@ file(GLOB all_SRCS
 
 if( WIN32 )
     # On windows resources are compiled with source by using .rc file
-    add_executable(${PROJECT_NAME} ${all_SRCS} ${PROJECT_SOURCE_DIR}/res/win.rc)
+    add_executable(${PROJECT_NAME} ${all_SRCS} ${PROJECT_SOURCE_DIR}/res/build/src/win.rc)
 else()
     add_executable(${PROJECT_NAME} ${all_SRCS})
 
