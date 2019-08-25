@@ -15,7 +15,7 @@ On MacOS uses `ld` to create object files that will link with your code.
 Internally uses `getsectiondata()` that's why MacOS 10.6 and older are not supported.
 
 
-Example usage
+How to use
 -------------
 It is the simplest to use this builder with CMake project.
 
@@ -44,7 +44,21 @@ else()
 endif()
 ~~~
 
-Place `resources.json` inside `res` directory in your project root.
+You need to place `resources.json` inside `res` directory in your project root. This file has following format:
+~~~
+{
+  // in resources array you should specify relative path to all your resources
+  "resources" : [
+    "./icons/r*/*.png", //you can use * to create patterns. basically, this can be any regex (used with fnmatch)
+    "./txt/*.txt"
+  ],
+  // in output you should store the name of build folder. all generated files are placed there
+  "output" : "build",
+  // project_name is used to prepend header define so it doesn't collide with any of your defines
+  "project_name" : "resource_builder"
+}
+~~~
+Don't forget to remove comments if you use this sample (json doesn't support comments).
 
 In your code you can get resource data and size by calling appropriate functions:
 ~~~
@@ -54,6 +68,11 @@ uint8_t* data = ResourceBuilder::get_resource_data(ResourceBuilder::RES_YOUR_RES
 uint32_t sz = ResourceBuilder::get_resource_size(ResourceBuilder::RES_YOUR_RES_NAME);
 ~~~
 
-All available resource ids are available in enum `ResourceBuilder::ResourceId`
+All resource ids are available in enum `ResourceBuilder::ResourceId`
+
+Examples
+--------
 
 A fully functional CMake project is available in `example` directory to show how resources are stored and used in code.
+In that example a few icons and a text file are embedded into executable. At runtime we access icon data
+(only print its size and output text file contains.
