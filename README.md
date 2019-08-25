@@ -85,3 +85,8 @@ The project is stored at:
 BitBucket https://bitbucket.org/funbiscuit/resource-builder
 
 Github https://github.com/funbiscuit/resource-builder
+
+License
+-------
+
+The project is licensed under MIT license (look LICENSE.txt)
