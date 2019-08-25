@@ -24,7 +24,7 @@ if( WIN32 )
 else()
     add_executable(${PROJECT_NAME} ${all_SRCS})
 
-    # On linux object files are created and should be linked with your executable
+    # On linux and macos object files are created and should be linked with your executable
     file(GLOB all_OBJS ${PROJECT_SOURCE_DIR}/res/build/objs/*.o)
     target_link_libraries(${PROJECT_NAME} ${all_OBJS})
 endif()

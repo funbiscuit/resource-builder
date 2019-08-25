@@ -2,12 +2,17 @@ Resource Builder for C++
 ------------------------
 
 A simple cross-platform resource builder for C++ programs.
-Works on Linux and Windows. Python 3.x is required.
+Works on Linux, Windows and MacOS (10.7 and higher). Python 3.x is required.
+
+Tested with latest Manjaro Linux, Windows 7/10 and MacOS 10.14
 
 On Linux uses `objcopy` to generate
 object files that will link with your code.
 
 On Windows `.rc` file is generated to be compiled with your code.
+
+On MacOS uses `ld` to create object files that will link with your code.
+Internally uses `getsectiondata()` that's why MacOS 10.6 and older are not supported.
 
 
 Example usage
@@ -32,7 +37,7 @@ include_directories(${PROJECT_SOURCE_DIR}/res/build/include)
 if( WIN32 )
     add_executable(${PROJECT_NAME} ${all_SRCS} ${PROJECT_SOURCE_DIR}/res/build/src/resources.cpp ${PROJECT_SOURCE_DIR}/res/build/src/win.rc)
 else()
-    # On Linux don't forget to link generated object files with executable
+    # On Linux and Mac OS don't forget to link generated object files with executable
     file(GLOB res_OBJS ${PROJECT_SOURCE_DIR}/res/build/objs/*.o)
     add_executable(${PROJECT_NAME} ${all_SRCS} ${PROJECT_SOURCE_DIR}/res/build/src/resources.cpp)
     target_link_libraries(${PROJECT_NAME} ${res_OBJS})
