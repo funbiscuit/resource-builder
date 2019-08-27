@@ -6,17 +6,49 @@ import os
 import sys
 import subprocess
 import json
+import time
 from shutil import rmtree
 
 parser = argparse.ArgumentParser(description="Arg parser")
 parser.add_argument('work_dir')
+parser.add_argument('-t', dest='timeout', help='how much to wait for another instance to finish (in seconds)')
+# 10s is enough to process hundreds of files (with objcopy/ld), change if you need more time
+parser.set_defaults(timeout=10)
 args = parser.parse_args()
+timeout = float(args.timeout)
 
 if not os.path.exists(args.work_dir):
     print("Working directory %s does not exist!" % args.work_dir)
     sys.exit(-1)
 
 os.chdir(args.work_dir)
+
+try:
+    lock_file = open("resource-builder.lock", "x")
+    lock_file.close()
+except FileExistsError as e:
+    start = time.time()
+    # if lock file exist, there are two options: another instance is running or it has crashed
+    # if this is the first option - just wait until another instance finishes its job and
+    # report that files were created by it (not treated as error)
+    # if in `timeout` seconds another instance doesn't finish - there is a good chance it has crashed
+    # and leaved its lock file in place. Report this as error and tell user to manually delete lock file
+    # Usually runtime of this script is less than a second.
+    # But even with objcopy/ld and hundreds of files it runs in less than 10 seconds
+    print("Waiting up to %0.2f seconds for another instance to finish..." % timeout)
+    while os.path.isfile("resource-builder.lock") and time.time() < start+timeout:
+        time.sleep(0.1)
+    if os.path.isfile("resource-builder.lock"):
+        print("Another instance did not finish in specified amount of time, exiting.\n" +
+              "If you are sure, this is not true, manually delete " +
+              "lock file resource-builder.lock from resources directory.")
+        print("If you are sure that you need more time for resource generation send it as argument:")
+        print("python resource-builder.py -t=[timeout in seconds] [work_dir]")
+        sys.exit(-1)
+    else:
+        print("Files were created by another instance, exiting.\n" +
+              "If you are sure, this is not true, restart script.")
+        sys.exit(0)
 
 if not os.path.exists("resources.json"):
     print("Working directory %s should contain resources.json!" % args.work_dir)
@@ -162,7 +194,7 @@ def get_var_name(file):
 
 
 def process_resource(file):
-    print("Processing %s" % file)
+    print("Including resource %s" % file)
 
     name = get_var_name(file)
     varNames.append((name, file))
@@ -175,9 +207,6 @@ with open("resources.json") as data_file:
     resources = config["resources"]
     output = config["output"]
     project_name = config["project_name"]
-
-    if os.path.exists(output):
-        rmtree(output)
 
     if not os.path.exists(output):
         os.mkdir(output)
@@ -192,12 +221,16 @@ with open("resources.json") as data_file:
     if not os.path.exists(output + "/include/resource_builder"):
         os.mkdir(output + "/include/resource_builder")
 
+    print("Scan resource files")
     for dirName, subdirList, fileList in os.walk("."):
         for f in fileList:
             local_file = dirName + "/" + f
-            if is_resource(local_file):
+            if f != "resource-builder.lock" and is_resource(local_file):
                 process_resource(local_file)
 
+    created_objs = []
+
+    print("Creating platform specific files")
     if sys.platform == "win32":
         with open("./build/src/win.rc", "w") as winFile:
             for var in varNames:
@@ -207,6 +240,7 @@ with open("resources.json") as data_file:
     elif sys.platform.startswith('linux'):
         for var in varNames:
             out_file = "%s/objs/%s.o" % (output, var[0])
+            created_objs.append("%s.o" % var[0])
             subprocess.call(["objcopy", "-I", "binary", "-O", "elf64-x86-64", "-B", "i386:x86-64", var[1], out_file])
     elif sys.platform.startswith('darwin'):
         # use approach from https://stackoverflow.com/a/13772389/7694893
@@ -219,8 +253,26 @@ with open("resources.json") as data_file:
             # section name is limited to 16 symbols, so up to 10,000,000 resources can be embedded (count from 0)
             mac_sect = "_res_sec_%d" % counter
             out_file = "%s/objs/%s.o" % (output, var[0])
+            created_objs.append("%s.o" % var[0])
             subprocess.call(["ld", "-r", "-o", out_file, "-sectcreate", "binary", mac_sect, var[1], stub_obj])
             counter += 1
+
+    print("Clean up unused platform files")
+    # delete old objects that were not created now (subdirs too)
+    for dirName, subdirList, fileList in os.walk("%s/objs" % output):
+        # remove files that were not generated in this run
+        for f in fileList:
+            delete_file = True
+            for obj in created_objs:
+                if obj == f:
+                    delete_file = False
+                    break
+            if delete_file:
+                os.remove("%s/objs/%s" % (output, f))
+        # remove all dirs (we are not generating them)
+        for d in subdirList:
+            rmtree("%s/objs/%s" % (output, d))
+        break
 
     with open("./build/include/resource_builder/resources.h", "w") as header:
         ids = ""
@@ -265,3 +317,7 @@ with open("resources.json") as data_file:
                                        names_arr, counter, counter, names_arr, counter, counter,
                                        counter, counter, counter, counter))
         source.close()
+
+        print("%d resources were successfully processed." % counter)
+
+os.remove("resource-builder.lock")
