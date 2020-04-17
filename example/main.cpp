@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include "resource_builder/resources.h"
 
 /**
@@ -17,8 +18,14 @@ int main() {
     data = ResourceBuilder::get_resource_data(ResourceBuilder::RES___TXT_HELLO_TXT);
     sz = ResourceBuilder::get_resource_size(ResourceBuilder::RES___TXT_HELLO_TXT);
 
+    // This is important when embedding string data. It is not guaranteed that we can read byte after
+    // last character and if it is even '\0'. So we need to copy data and set null byte manually
+    auto cstr = std::unique_ptr<char[]>(new char[sz+1]);
+    memcpy(cstr.get(), data, sz);
+    cstr[sz] = '\0';
+
     //new line is not added at the end because text file has one empty line at the end
-    std::cout << "Included text is "<<(const char*) data;
+    std::cout << "Included text is "<< cstr.get();
     //Expected output:
     //Included text is Hello world from embedded resource!
 
