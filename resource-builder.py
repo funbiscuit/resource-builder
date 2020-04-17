@@ -82,14 +82,38 @@ headerTemplate = """/**
 #ifndef %s_RESOURCE_BUILDER_H
 #define %s_RESOURCE_BUILDER_H
 #include <cstdint>
+#include <string>
 
 namespace ResourceBuilder {
-    enum ResourceId {
+    enum class ResId {
         %s
     };
 
-    const uint8_t * get_resource_data(ResourceId id);
-    uint32_t get_resource_size(ResourceId id);
+    /**
+     * Wraps utf-8 text into string.
+     * Internally calls get_resource_data and get_resource_size.
+     * Allocates temporary char array with extra char for null-byte since embedded resource
+     * might not have null byte at the end.
+     * @param id - resource id
+     * @return string encapsulating resource text
+     */
+    std::string get_resource_text(ResId id);
+
+    /**
+     * Returns resource data for given ID. Do not attempt to delete it!
+     * Call get_resource_size to get size of array
+     * @param id - resource id
+     * @return pointer to data
+     */
+    const uint8_t * get_resource_data(ResId id);
+
+    /**
+     * Returns size of resource data for given ID.
+     * Do not attempt to access memory outside. This will lead to undefined behavior.
+     * @param id - resource id
+     * @return data size
+     */
+    uint32_t get_resource_size(ResId id);
 }
 #endif //%s_RESOURCE_BUILDER_H
 """
@@ -98,18 +122,36 @@ sourceTemplate = """/**
  */
 
 #include "resource_builder/resources.h"
+#include <memory>
+#include <cstring>
+
+std::string ResourceBuilder::get_resource_text(ResourceBuilder::ResId id)
+{
+    auto data = ResourceBuilder::get_resource_data(id);
+    auto sz = ResourceBuilder::get_resource_size(id);
+    if(!data || sz == 0 )
+        return "";
+    // This is important when embedding string data. It is not guaranteed that we can read byte after
+    // last character and if it is even '\0'. So we need to copy data and set null byte manually
+    auto cstr = std::unique_ptr<char[]>(new char[sz+1]);
+    memcpy(cstr.get(), data, sz);
+    cstr[sz] = '\\0';
+
+    // unique_ptr will delete allocated array for us
+    return std::string(cstr.get());
+}
 
 #ifdef __linux__
 
 %s
-const uint8_t* ResourceBuilder::get_resource_data(ResourceBuilder::ResourceId id) {
+const uint8_t* ResourceBuilder::get_resource_data(ResourceBuilder::ResId id) {
     uint8_t* starts[] = {%s};
-    return starts[id];
+    return starts[static_cast<int>(id)];
 }
 
-uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResourceId id) {
+uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResId id) {
     uint32_t sizes[] = {%s};
-    return sizes[id];
+    return sizes[static_cast<int>(id)];
 }
 #endif
 
@@ -118,7 +160,7 @@ uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResourceId id) {
 #include <Windows.h>
 #include <WinUser.h>
 
-const uint8_t* ResourceBuilder::get_resource_data(ResourceBuilder::ResourceId id) {
+const uint8_t* ResourceBuilder::get_resource_data(ResourceBuilder::ResId id) {
     static bool is_loaded = false;
     static const char* names[] = {%s};
     static uint8_t* starts[%d];
@@ -132,10 +174,10 @@ const uint8_t* ResourceBuilder::get_resource_data(ResourceBuilder::ResourceId id
         }
     }
 
-    return starts[id];
+    return starts[static_cast<int>(id)];
 }
 
-uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResourceId id) {
+uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResId id) {
     static bool is_loaded = false;
     static const char* names[] = {%s};
     static uint32_t sizes[%d];
@@ -149,7 +191,7 @@ uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResourceId id) {
         }
     }
     
-    return sizes[id];
+    return sizes[static_cast<int>(id)];
 }
 #endif
 
@@ -158,7 +200,7 @@ uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResourceId id) {
 #include <mach-o/getsect.h>
 #include <mach-o/ldsyms.h>
 
-const uint8_t* ResourceBuilder::get_resource_data(ResourceBuilder::ResourceId id) {
+const uint8_t* ResourceBuilder::get_resource_data(ResourceBuilder::ResId id) {
     static bool is_loaded = false;
     static uint8_t* starts[%d];
     
@@ -174,10 +216,10 @@ const uint8_t* ResourceBuilder::get_resource_data(ResourceBuilder::ResourceId id
         }
     }
 
-    return starts[id];
+    return starts[static_cast<int>(id)];
 }
 
-uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResourceId id) {
+uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResId id) {
     static bool is_loaded = false;
     static uint32_t sizes[%d];
     
@@ -194,7 +236,7 @@ uint32_t ResourceBuilder::get_resource_size(ResourceBuilder::ResourceId id) {
         }
     }
     
-    return sizes[id];
+    return sizes[static_cast<int>(id)];
 }
 
 #endif
@@ -314,7 +356,7 @@ with open("resources.json") as data_file:
             if not isFirst:
                 # for second and other ids add comma, new line and 8 spaces
                 ids += ",\n        "
-            ids += "RES_%s = %d" % (var[0].upper(), counter)
+            ids += "%s = %d" % (var[0].upper(), counter)
             counter += 1
             isFirst = False
         header_def = project_name.upper()

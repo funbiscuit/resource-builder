@@ -1,6 +1,5 @@
 #include <iostream>
 #include <memory>
-#include <cstring>
 
 #include "resource_builder/resources.h"
 
@@ -10,24 +9,19 @@
  * need a library to load image from memory (e.g. stb_image). Raw text data can be used without processing.
  */
 int main() {
-    const uint8_t* data = ResourceBuilder::get_resource_data(ResourceBuilder::RES___ICONS_R64_SAMPLE_PNG);
-    uint32_t sz = ResourceBuilder::get_resource_size(ResourceBuilder::RES___ICONS_R64_SAMPLE_PNG);
+    const uint8_t* data = ResourceBuilder::get_resource_data(ResourceBuilder::ResId::__ICONS_R64_SAMPLE_PNG);
+    uint32_t sz = ResourceBuilder::get_resource_size(ResourceBuilder::ResId::__ICONS_R64_SAMPLE_PNG);
 
     std::cout << "Included icon is "<<sz<<" bytes long\n";
     //Expected output:
     //Included icon is 3571 bytes long
 
-    data = ResourceBuilder::get_resource_data(ResourceBuilder::RES___TXT_HELLO_TXT);
-    sz = ResourceBuilder::get_resource_size(ResourceBuilder::RES___TXT_HELLO_TXT);
-
     // This is important when embedding string data. It is not guaranteed that we can read byte after
     // last character and if it is even '\0'. So we need to copy data and set null byte manually
-    auto cstr = std::unique_ptr<char[]>(new char[sz+1]);
-    memcpy(cstr.get(), data, sz);
-    cstr[sz] = '\0';
+    auto text = ResourceBuilder::get_resource_text(ResourceBuilder::ResId::__TXT_HELLO_TXT);
 
     //new line is not added at the end because text file has one empty line at the end
-    std::cout << "Included text is "<< cstr.get();
+    std::cout << "Included text is "<< text;
     //Expected output:
     //Included text is Hello world from embedded resource!
 
