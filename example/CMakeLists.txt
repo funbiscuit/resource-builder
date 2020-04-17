@@ -10,8 +10,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE}
         ${PROJECT_SOURCE_DIR}/res                    #work directory where resources are stored
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(resource_example)
-target_sources(resource_example PRIVATE main.cpp)
+add_executable(resource_example main.cpp)
 
 #resource will be compiled in res/build folder (it is specified in res/resources.json)
 #we only need to add it as subdirectory and link to created library
