@@ -1,0 +1,56 @@
+# Test that example project is built and executed correctly
+version: 1.0.{build}
+
+image:
+  - Visual Studio 2017
+  - Ubuntu
+
+platform:
+  - x64
+
+for:
+-
+  matrix:
+    only:
+      - image: Visual Studio 2017
+
+  init:
+    - ver
+    - cmake --version
+
+  build_script:
+    - ps: echo "Check that example app is building and producing expected output"
+    - ps: $env:Path = "C:\Python33\;" + $env:Path
+    - ps: cd example
+    - ps: md build
+    - ps: cd build
+    - ps: cmake .. -G "Visual Studio 15 2017"
+    - ps: cmake --build .
+    - ps: cd Debug
+    - ps: .\resource_example.exe > out.txt
+    - ps: cat out.txt
+    - ps: echo "Included icon is 3571 bytes long" > verif.txt
+    - ps: echo "Included text is Hello world from embedded resource!" >> verif.txt
+    - ps: cat verif.txt
+    - ps: if(diff (cat out.txt) (cat verif.txt)){"Output is not as expected! Exiting!";exit -1}else{"Output is as expected"}
+-
+  matrix:
+    only:
+      - image: Ubuntu
+
+  init:
+    - cmake --version
+
+  build_script:
+    - echo "Check that example app is building and producing expected output"
+    - cd example
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
+    - ./resource_example > out.txt
+    - echo "Included icon is 3571 bytes long" > verif.txt
+    - echo "Included text is Hello world from embedded resource!" >> verif.txt
+    - cat out.txt
+    - cat verif.txt
+    - cmp out.txt verif.txt || (echo "Output is not as expected! Exiting!" && exit -1)
