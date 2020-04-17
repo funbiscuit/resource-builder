@@ -4,5 +4,5 @@
     "./txt/*.txt"
   ],
   "output" : "build",
-  "project_name" : "resource_builder"
+  "project_name" : "ResourceBuilder"
 }

@@ -21,28 +21,30 @@ It is the simplest to use this builder with CMake project.
 
 Suppose you have `resource-builder.py` located at `./libs/resource-builder/resource-builder.py`.
 
+Suppose in CMakeLists.txt you create your executable:
+~~~
+add_executable(YourExecutableName)
+~~~
+
 In CMakeLists.txt add following code:
 
 ~~~
 find_package( PythonInterp 3.0 REQUIRED )
 
 #if you put your resource files not in ./res folder make changes here
-set(RES_GEN_COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libs/resource-builder/resource-builder.py ${PROJECT_SOURCE_DIR}/res)
-execute_process(COMMAND ${RES_GEN_COMMAND})
+execute_process(COMMAND ${PYTHON_EXECUTABLE}
+        ${PROJECT_SOURCE_DIR}/libs/resource-builder/resource-builder.py #path to python script that builds resources
+        ${PROJECT_SOURCE_DIR}/res                                       #work directory where resources are stored
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-#your need to add res/build/include as include dir:
-include_directories(${PROJECT_SOURCE_DIR}/res/build/include)
-
-# In your add_executable call add generated source (suppose all other sources are stored in all_SRCS variable
-if( WIN32 )
-    add_executable(${PROJECT_NAME} ${all_SRCS} ${PROJECT_SOURCE_DIR}/res/build/src/resources.cpp ${PROJECT_SOURCE_DIR}/res/build/src/win.rc)
-else()
-    # On Linux and Mac OS don't forget to link generated object files with executable
-    file(GLOB res_OBJS ${PROJECT_SOURCE_DIR}/res/build/objs/*.o)
-    add_executable(${PROJECT_NAME} ${all_SRCS} ${PROJECT_SOURCE_DIR}/res/build/src/resources.cpp)
-    target_link_libraries(${PROJECT_NAME} ${res_OBJS})
-endif()
+#resource will be compiled in res/build folder (it is specified in res/resources.json)
+#only need to add it as subdirectory and link to created library
+add_subdirectory(res/build)
+target_link_libraries(YourExecutableName PRIVATE ResourceBuilder::ResourceBuilder)
 ~~~
+
+This runs python script to generate all required files and then you just
+write two lines to include everything in your project.
 
 You need to place `resources.json` inside `res` directory in your project root. This file has following format:
 ~~~
@@ -55,7 +57,8 @@ You need to place `resources.json` inside `res` directory in your project root. 
   // in output you should store the name of build folder. all generated files are placed there
   "output" : "build",
   // project_name is used to prepend header define so it doesn't collide with any of your defines
-  "project_name" : "resource_builder"
+  // it is also used to name static library that you'll need to link your executable
+  "project_name" : "ResourceBuilder"
 }
 ~~~
 Don't forget to remove comments if you use this sample (json doesn't support comments).

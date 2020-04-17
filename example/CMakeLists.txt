@@ -1,30 +1,20 @@
-cmake_minimum_required(VERSION 3.0)
-project(resource_test)
+cmake_minimum_required(VERSION 3.1)
+project(resource_example)
 
 set(CMAKE_CXX_STANDARD 11)
 
 # compile resources
 find_package( PythonInterp 3.0 REQUIRED )
-set(RES_GEN_COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/../resource-builder.py ${PROJECT_SOURCE_DIR}/res)
-execute_process(COMMAND ${RES_GEN_COMMAND})
+execute_process(COMMAND ${PYTHON_EXECUTABLE}
+        ${PROJECT_SOURCE_DIR}/../resource-builder.py #path to python script that builds resources
+        ${PROJECT_SOURCE_DIR}/res                    #work directory where resources are stored
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-include_directories(
-        ${PROJECT_SOURCE_DIR}
-        ${PROJECT_SOURCE_DIR}/res/build/include
-)
+add_executable(resource_example)
+target_sources(resource_example PRIVATE main.cpp)
 
-file(GLOB all_SRCS
-        ${PROJECT_SOURCE_DIR}/*.cpp
-        ${PROJECT_SOURCE_DIR}/res/build/src/resources.cpp
-        )
-
-if( WIN32 )
-    # On windows resources are compiled with source by using .rc file
-    add_executable(${PROJECT_NAME} ${all_SRCS} ${PROJECT_SOURCE_DIR}/res/build/src/win.rc)
-else()
-    add_executable(${PROJECT_NAME} ${all_SRCS})
-
-    # On linux and macos object files are created and should be linked with your executable
-    file(GLOB all_OBJS ${PROJECT_SOURCE_DIR}/res/build/objs/*.o)
-    target_link_libraries(${PROJECT_NAME} ${all_OBJS})
-endif()
+#resource will be compiled in res/build folder (it is specified in res/resources.json)
+#we only need to add it as subdirectory and link to created library
+#name of the library is specified in resources.json
+add_subdirectory(res/build)
+target_link_libraries(resource_example PRIVATE ResourceBuilder::ResourceBuilder)
