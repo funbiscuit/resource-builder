@@ -4,6 +4,7 @@ version: 1.0.{build}
 image:
   - Visual Studio 2017
   - Ubuntu
+  - macos-mojave
 
 platform:
   - x64
@@ -43,6 +44,25 @@ for:
 
   build_script:
     - echo "Check that example app is building and producing expected output"
+    - cd example
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
+    - ./resource_example > out.txt
+    - echo "Included icon is 3571 bytes long" > verif.txt
+    - echo "Included text is Hello world from embedded resource!" >> verif.txt
+    - cat out.txt
+    - cat verif.txt
+    - cmp out.txt verif.txt || (echo "Output is not as expected! Exiting!" && exit -1)
+
+-
+  matrix:
+    only:
+      - image: macos-mojave
+  init:
+    - cmake --version
+  build_script:
     - cd example
     - mkdir build
     - cd build
