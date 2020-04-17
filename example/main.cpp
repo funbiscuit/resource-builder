@@ -1,5 +1,7 @@
 #include <iostream>
 #include <memory>
+#include <cstring>
+
 #include "resource_builder/resources.h"
 
 /**
