@@ -65,22 +65,25 @@ You need to place `resources.json` inside `res` directory in your project root. 
 ~~~
 Don't forget to remove comments if you use this sample (json doesn't support comments).
 
-In your code you can get resource data and size by calling appropriate functions:
+In your code you can get resource data and size (or text) by calling appropriate functions:
 ~~~
 #include "resource_builder/resources.h"
 
-uint8_t* data = ResourceBuilder::get_resource_data(ResourceBuilder::RES_YOUR_RES_NAME);
-uint32_t sz = ResourceBuilder::get_resource_size(ResourceBuilder::RES_YOUR_RES_NAME);
+// ...
+
+uint8_t* data = ResourceBuilder::get_resource_data(ResourceBuilder::ResId::YOUR_RES_NAME);
+uint32_t sz = ResourceBuilder::get_resource_size(ResourceBuilder::ResId::YOUR_RES_NAME);
+std::string utf8text = ResourceBuilder::get_resource_text(ResourceBuilder::ResId::YOUR_RES_NAME);
 ~~~
 
-All resource ids are available in enum `ResourceBuilder::ResourceId`
+All resource ids are available in enum class `ResourceBuilder::ResId`
 
 Examples
 --------
 
 A fully functional CMake project is available in `example` directory to show how resources are stored and used in code.
 In that example a few icons and a text file are embedded into executable. At runtime we access icon data
-(only print its size and output text file contains.
+(only print its size in bytes) and output text file contains.
 
 Mirrors
 -------
