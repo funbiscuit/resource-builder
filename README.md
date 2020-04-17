@@ -1,3 +1,5 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/awfkahvjccosn8il/branch/master?svg=true)](https://ci.appveyor.com/project/funbiscuit/resource-builder/branch/master)
+
 Resource Builder for C++
 ------------------------
 
