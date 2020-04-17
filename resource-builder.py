@@ -62,6 +62,7 @@ set(RES_BUILDER_NAME %s)
 project(${RES_BUILDER_NAME} VERSION 1.0 LANGUAGES CXX)
 
 add_library(${RES_BUILDER_NAME} STATIC src/resources.cpp)
+target_compile_features(${RES_BUILDER_NAME} PUBLIC cxx_std_11)
 target_include_directories(${RES_BUILDER_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 %s
 add_library(${RES_BUILDER_NAME}::${RES_BUILDER_NAME} ALIAS ${RES_BUILDER_NAME})
