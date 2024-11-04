@@ -7,6 +7,7 @@ import sys
 import subprocess
 import json
 import time
+import platform
 from shutil import rmtree
 
 parser = argparse.ArgumentParser(description="Arg parser")
@@ -302,10 +303,37 @@ with open("resources.json") as data_file:
                 winFile.write("%s RCDATA \"./../../%s\"\n" % (var[0], path))
             winFile.close()
     elif sys.platform.startswith('linux'):
+        arch = platform.machine()
+        if arch == 'x86_64':
+            o_flag, b_flag = "elf64-x86-64", "i386:x86-64"
+        elif arch in ('i686', 'i386'):
+            o_flag, b_flag = "elf32-i386", "i386"
+        elif arch == 'armv7l':
+            o_flag, b_flag = "elf32-littlearm", "arm"
+        elif arch == 'aarch64':
+            o_flag, b_flag = "elf64-aarch64", "aarch64"
+        elif arch == 'ppc':
+            o_flag, b_flag = "elf32-powerpc", "powerpc"
+        elif arch == 'ppc64':
+            o_flag, b_flag = "elf64-powerpc", "powerpc:common64"
+        elif arch == 'mips':
+            o_flag, b_flag = "elf32-tradbigmips", "mips"
+        elif arch == 'mipsel':
+            o_flag, b_flag = "elf32-tradlittlemips", "mipsel"
+        elif arch == 'mips64':
+            o_flag, b_flag = "elf64-tradbigmips", "mips64"
+        elif arch == 'mips64el':
+            o_flag, b_flag = "elf64-tradlittlemips", "mips64el"
+        elif arch == 'riscv32':
+            o_flag, b_flag = "elf32-littleriscv", "riscv:rv32"
+        elif arch == 'riscv64':
+            o_flag, b_flag = "elf64-littleriscv", "riscv:rv64"
+        else:
+            raise ValueError("Unsupported architecture: %s" % arch)
         for var in varNames:
             out_file = "%s/objs/%s.o" % (output, var[0])
             created_objs.append("%s.o" % var[0])
-            subprocess.call(["objcopy", "-I", "binary", "-O", "elf64-x86-64", "-B", "i386:x86-64", var[1], out_file])
+            subprocess.call(["objcopy", "-I", "binary", "-O", o_flag, "-B", b_flag, var[1], out_file])
     elif sys.platform.startswith('darwin'):
         # use approach from https://stackoverflow.com/a/13772389/7694893
         stub_src = "./build/temp/stub.c"
